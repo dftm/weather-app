@@ -1,0 +1,49 @@
+.main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.day {
+  margin-top: 2rem;
+}
+
+.dayHeading {
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.35);
+  padding-bottom: 0.35rem;
+}
+
+.slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.75rem;
+}
+
+.slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.75rem 0.5rem;
+  border-radius: 8px;
+  background: rgba(128, 128, 128, 0.12);
+  text-align: center;
+}
+
+.time {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.temp {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.desc {
+  font-size: 0.75rem;
+  text-transform: capitalize;
+  opacity: 0.85;
+}

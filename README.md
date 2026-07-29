@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 5-Day Weather Forecast
 
-## Getting Started
+A Next.js (App Router, JavaScript) app that shows a 5-day, 3-hour-increment weather forecast for any US zip code, using the OpenWeather API.
 
-First, run the development server:
+## Setup
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. Install dependencies:
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+   ```bash
+   npm install
+   ```
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+2. Get a free API key from [OpenWeather](https://openweathermap.org/api). Note: newly created keys can take up to a couple of hours to activate.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. Create a `.env.local` file in the project root with:
 
-## Learn More
+   ```
+   OPENWEATHER_API_KEY=your_key_here
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+4. Run the dev server:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   ```bash
+   npm run dev
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+5. Open [http://localhost:3000](http://localhost:3000), enter a zip code, or go directly to a URL like [http://localhost:3000/weather/90210](http://localhost:3000/weather/90210).
 
-## Deploy on Vercel
+## How it works
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `/weather/[zip]` is a dynamic route rendered entirely server-side (no `"use client"`), so the OpenWeather calls happen on the server.
+- Since OpenWeather's forecast endpoint takes latitude/longitude rather than a zip code, the app first resolves the zip via OpenWeather's Geocoding API, then requests the 5-day/3-hour forecast for those coordinates.
+- Forecast entries are grouped by calendar day (in the zip code's own local time, not the viewer's) and rendered as a grid of 3-hour slots per day.
+- Invalid zip formats and zips with no matching US location are handled with a plain message rather than a crash.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project structure
+
+- `src/lib/openweather.js` — API calls and formatting helpers.
+- `src/app/page.js` — home page with the zip search form (the one client component in the app).
+- `src/app/weather/[zip]/page.js` — the forecast page.
