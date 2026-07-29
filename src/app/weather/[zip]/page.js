@@ -5,6 +5,7 @@ import {
   formatDayHeading,
   formatSlotTime,
 } from "@/lib/openweather";
+import TempValue from "./TempValue";
 import styles from "./page.module.css";
 
 const ZIP_PATTERN = /^\d{5}$/;
@@ -61,7 +62,7 @@ export default async function WeatherPage({ params }) {
                   width={40}
                   height={40}
                 />
-                <span className={styles.temp}>{Math.round(entry.main.temp)}&deg;F</span>
+                <TempValue className={styles.temp} fahrenheit={entry.main.temp} />
                 <span className={styles.desc}>{entry.weather[0].description}</span>
               </div>
             ))}
