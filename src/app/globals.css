@@ -10,6 +10,18 @@
   }
 }
 
+html[data-theme="light"] {
+  --background: blanchedalmond;
+  --foreground: #171717;
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  --background: darkslategray;
+  --foreground: #ededed;
+  color-scheme: dark;
+}
+
 html {
   height: 100%;
 }
