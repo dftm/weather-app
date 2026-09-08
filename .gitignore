@@ -36,6 +36,14 @@ yarn-error.log*
 # vercel
 .vercel
 
+# personal reference docs, not part of the submission
+WALKTHROUGH.local.md
+SYSTEM-MAP.local.html
+CRASH-COURSE.local.md
+CHEAT-SHEET.local.md
+ASSIGNMENT-BRIEF.local.md
+PRACTICE-REPS.local.md
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
