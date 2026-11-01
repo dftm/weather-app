@@ -5,6 +5,7 @@ import {
   formatDayHeading,
   formatSlotTime,
 } from "@/lib/openweather";
+import Link from "next/link";
 import styles from "./page.module.css";
 
 const ZIP_PATTERN = /^\d{5}$/;
@@ -18,7 +19,7 @@ export default async function WeatherPage({ params }) {
         <h1>Invalid zip code</h1>
         <p>
           &ldquo;{zip}&rdquo; isn&apos;t a 5-digit US zip code. Try{" "}
-          <a href="/weather/90210">90210</a>.
+          <Link href="/weather/90210">90210</Link>.
         </p>
       </main>
     );
