@@ -1,5 +1,6 @@
 import {
   OpenWeatherError,
+  describeUpstreamError,
   getCoordsForZip,
   getForecast,
   groupForecastByDay,
@@ -9,6 +10,10 @@ import {
 } from "@/lib/openweather";
 import Link from "next/link";
 import styles from "./page.module.css";
+
+// Never cache a rendered failure page (transient 429/timeout would otherwise
+// be served from the route cache). Unverified without `next build`.
+export const dynamic = "force-dynamic";
 
 const ZIP_PATTERN = /^\d{5}$/;
 
@@ -45,15 +50,11 @@ export default async function WeatherPage({ params }) {
     if (!(error instanceof OpenWeatherError)) throw error;
     // Next strips error messages from server errors in production, so the
     // distinct copy is rendered here rather than in error.js.
-    const busy = error.status === 429;
+    const { title, message } = describeUpstreamError(error);
     return (
       <main className={styles.main}>
-        <h1>{busy ? "Service busy" : "Forecast unavailable"}</h1>
-        <p>
-          {busy
-            ? "The weather service is receiving too many requests. Please try again in a minute."
-            : "We couldn\u2019t load the forecast right now. Please try again later."}
-        </p>
+        <h1>{title}</h1>
+        <p>{message}</p>
         {searchAgain}
       </main>
     );

@@ -8,6 +8,7 @@ import {
   formatDayHeading,
   formatSlotTime,
   isPartialDay,
+  describeUpstreamError,
 } from "./openweather.js";
 
 const realFetch = globalThis.fetch;
@@ -78,7 +79,7 @@ test("geocode passes timeout signal and 24h revalidate", async () => {
 });
 
 test("forecast passes timeout signal and 15min revalidate", async () => {
-  const calls = mockFetch(200, { list: [] });
+  const calls = mockFetch(200, { list: [], city: { timezone: 0 } });
   await getForecast(1, 2);
   assert.ok(calls[0].options.signal instanceof AbortSignal);
   assert.deepEqual(calls[0].options.next, { revalidate: 900 });
@@ -137,4 +138,62 @@ test("formatSlotTime: negative and positive offsets", () => {
 test("formatDayHeading", () => {
   assert.equal(formatDayHeading("2026-01-14"), "Wednesday, Jan 14");
   assert.equal(formatDayHeading("2026-01-16"), "Friday, Jan 16");
+});
+
+test("isPartialDay boundary: 7 slots partial, 8 slots full", () => {
+  assert.equal(isPartialDay(Array(7).fill({})), true);
+  assert.equal(isPartialDay(Array(8).fill({})), false);
+});
+
+test("rejected fetch maps to network error without leaking key or URL", async () => {
+  globalThis.fetch = async (url) => {
+    throw new TypeError(`fetch failed for ${url}`);
+  };
+  await assert.rejects(getForecast(1, 2), (err) => {
+    assert.ok(err instanceof OpenWeatherError);
+    assert.equal(err.code, "network");
+    assert.ok(!err.message.includes("test-key"));
+    assert.equal(err.cause, undefined);
+    return true;
+  });
+});
+
+function mockBody(readJson) {
+  globalThis.fetch = async () => ({ status: 200, ok: true, json: readJson });
+}
+
+test("malformed JSON body maps to bad_response", async () => {
+  mockBody(async () => {
+    throw new SyntaxError("Unexpected token");
+  });
+  await assert.rejects(getForecast(1, 2), (err) => err.code === "bad_response");
+  await assert.rejects(getCoordsForZip("90210"), (err) => err.code === "bad_response");
+});
+
+test("body read timeout maps to timeout error", async () => {
+  mockBody(async () => {
+    const e = new Error("t");
+    e.name = "TimeoutError";
+    throw e;
+  });
+  await assert.rejects(getForecast(1, 2), (err) => {
+    assert.ok(err instanceof OpenWeatherError);
+    return err.code === "timeout";
+  });
+});
+
+test("200 with missing city/list or coords maps to bad_response", async () => {
+  for (const body of [{}, { list: [] }, { city: { timezone: 0 } }, null]) {
+    mockBody(async () => body);
+    await assert.rejects(getForecast(1, 2), (err) => err.code === "bad_response");
+  }
+  mockBody(async () => ({ name: "X" }));
+  await assert.rejects(getCoordsForZip("90210"), (err) => err.code === "bad_response");
+});
+
+test("describeUpstreamError: 429 is service busy, others unavailable", () => {
+  assert.equal(describeUpstreamError({ status: 429 }).title, "Service busy");
+  for (const e of [{ status: 401 }, { status: 500 }, { code: "config" }, { code: "timeout" }]) {
+    assert.equal(describeUpstreamError(e).title, "Forecast unavailable");
+  }
 });

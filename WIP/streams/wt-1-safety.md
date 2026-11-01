@@ -21,3 +21,13 @@
 
 ## Surprises
 - Rate-limit and timeout copy never exercised against real API (no network by constraint).
+
+## Fix pass (review F1-F8)
+- F1: `export const dynamic = "force-dynamic"` on the weather page so failure renders are not route-cached. Fetch-level `next.revalidate` is kept (per-response non-2xx exclusion is not possible with the fetch options API); whether Next Data Cache stores a non-2xx upstream response (e.g. 429 for 24h on geocode) is UNVERIFIED without a build/run. Unverified end to end (no build possible offline).
+- F2: `error.js` has a Link to `/`; retry runs `router.refresh()` + `reset()` inside `startTransition`.
+- F3: `res.json()` and shape checks (coords; `list` array and numeric `city.timezone`) are wrapped; body timeout -> code "timeout", bad JSON/missing fields -> code "bad_response". Tests added.
+- F4: tests for 7 vs 8 slot boundary, "network" code (no key/URL, no cause), bad_response, body timeout. page.js cannot be loaded by node:test (alias, CSS module, JSX), so its copy logic moved to the testable `describeUpstreamError` in the lib; page rendering itself remains untested. DST: DEFERRED -- `city.timezone` is a single fixed offset; per-slot offsets would need a timezone database lookup (not available from the payload). Documented as a known limitation in `openweather.js`.
+- F5: home h1 and layout metadata title now "Weather Forecast", matching the results heading. README still says "5-Day" in its title/description and is unchanged (wording intent unclear; owner may want README aligned).
+- F6: documented in `openweather.js` (key is part of the Data Cache key; do not enable `logging.fetches.fullUrl`). No code change.
+- F7: `role="status"` live region announces loading; error `<p>` has `role="alert"`, input has `aria-invalid`/`aria-describedby`; button uses `aria-disabled` (keeps focus) with a submit guard instead of `disabled`.
+- F8: `src/app/global-error.js` added.

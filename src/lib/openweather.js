@@ -3,7 +3,8 @@ const BASE_URL = "https://api.openweathermap.org";
 // Typed error for upstream/config failures. Messages never include the
 // request URL (which contains the API key).
 // code: "config" (missing key), "http" (non-OK upstream status),
-// "timeout" (no response within FETCH_TIMEOUT_MS), "network" (fetch rejected).
+// "timeout" (no response within FETCH_TIMEOUT_MS), "network" (fetch rejected),
+// "bad_response" (body unreadable, malformed JSON or missing fields).
 export class OpenWeatherError extends Error {
   constructor(message, { status = null, code = "http" } = {}) {
     super(message);
@@ -28,6 +29,42 @@ async function owFetch(url, revalidate) {
       { code: timedOut ? "timeout" : "network" },
     );
   }
+}
+
+// Read and parse the JSON body. The abort signal also covers the body read, so
+// a stalled body surfaces here as TimeoutError; map everything to typed errors.
+async function readJson(res) {
+  try {
+    return await res.json();
+  } catch (error) {
+    if (error?.name === "TimeoutError" || error?.name === "AbortError") {
+      throw new OpenWeatherError("OpenWeather response timed out", { code: "timeout" });
+    }
+    throw new OpenWeatherError("OpenWeather returned an unreadable response", {
+      code: "bad_response",
+    });
+  }
+}
+
+function badResponse() {
+  return new OpenWeatherError("OpenWeather returned an unexpected response", {
+    code: "bad_response",
+  });
+}
+
+// Copy for upstream failures, shared by the page. (error.js cannot use this:
+// Next strips server error messages in production.)
+export function describeUpstreamError(error) {
+  if (error?.status === 429) {
+    return {
+      title: "Service busy",
+      message: "The weather service is receiving too many requests. Please try again in a minute.",
+    };
+  }
+  return {
+    title: "Forecast unavailable",
+    message: "We couldn\u2019t load the forecast right now. Please try again later.",
+  };
 }
 
 function requireApiKey() {
@@ -55,10 +92,18 @@ export async function getCoordsForZip(zip) {
     });
   }
 
-  const data = await res.json();
+  const data = await readJson(res);
+  if (!data || typeof data.lat !== "number" || typeof data.lon !== "number") {
+    throw badResponse();
+  }
   return { lat: data.lat, lon: data.lon, name: data.name };
 }
 
+// NOTE (F6): the API key is part of the fetch URL, so it is part of Next's
+// server-side Data Cache key. It is never sent to clients; do not enable
+// `logging.fetches.fullUrl` in next.config.
+// Known limitation: city.timezone is one fixed UTC offset, so a forecast window
+// that crosses a DST change shifts labels/grouping by 1h after the change.
 // 5 day / 3 hour forecast for a given coordinate pair.
 export async function getForecast(lat, lon) {
   const apiKey = requireApiKey();
@@ -72,7 +117,11 @@ export async function getForecast(lat, lon) {
     });
   }
 
-  return res.json();
+  const data = await readJson(res);
+  if (!data || !Array.isArray(data.list) || typeof data.city?.timezone !== "number") {
+    throw badResponse();
+  }
+  return data;
 }
 
 // entry.dt is a UTC unix timestamp (seconds). The forecast is for the zip
