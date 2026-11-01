@@ -91,7 +91,7 @@ export default async function WeatherPage({ params }) {
           <h2 className={styles.dayHeading}>{formatDayHeading(day.date)}
             {isPartialDay(day.entries) && " (partial day)"}
           </h2>
-          <ul className={styles.slots}>
+          <ul className={styles.slots} role="list">
             {day.entries.map((entry) => (
               <li key={entry.dt} className={styles.slot}>
                 <span className={styles.time}>
