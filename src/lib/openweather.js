@@ -1,9 +1,29 @@
 const BASE_URL = "https://api.openweathermap.org";
 
+// Typed error for upstream/config failures. Messages never include the
+// request URL (which contains the API key).
+// code: "config" (missing key), "http" (non-OK upstream status).
+export class OpenWeatherError extends Error {
+  constructor(message, { status = null, code = "http" } = {}) {
+    super(message);
+    this.name = "OpenWeatherError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+function requireApiKey() {
+  const apiKey = process.env.OPENWEATHER_API_KEY;
+  if (!apiKey) {
+    throw new OpenWeatherError("OPENWEATHER_API_KEY is not set", { code: "config" });
+  }
+  return apiKey;
+}
+
 // OpenWeather's forecast endpoint wants lat/lon, not a zip code directly,
 // so we look up coordinates first via their Geocoding API.
 export async function getCoordsForZip(zip) {
-  const apiKey = process.env.OPENWEATHER_API_KEY;
+  const apiKey = requireApiKey();
   const url = `${BASE_URL}/geo/1.0/zip?zip=${zip},US&appid=${apiKey}`;
 
   const res = await fetch(url);
@@ -12,7 +32,9 @@ export async function getCoordsForZip(zip) {
     return null; // zip code not recognized
   }
   if (!res.ok) {
-    throw new Error(`Geocoding request failed with status ${res.status}`);
+    throw new OpenWeatherError(`Geocoding request failed with status ${res.status}`, {
+      status: res.status,
+    });
   }
 
   const data = await res.json();
@@ -21,13 +43,15 @@ export async function getCoordsForZip(zip) {
 
 // 5 day / 3 hour forecast for a given coordinate pair.
 export async function getForecast(lat, lon) {
-  const apiKey = process.env.OPENWEATHER_API_KEY;
+  const apiKey = requireApiKey();
   const url = `${BASE_URL}/data/2.5/forecast?lat=${lat}&lon=${lon}&units=imperial&appid=${apiKey}`;
 
   const res = await fetch(url);
 
   if (!res.ok) {
-    throw new Error(`Forecast request failed with status ${res.status}`);
+    throw new OpenWeatherError(`Forecast request failed with status ${res.status}`, {
+      status: res.status,
+    });
   }
 
   return res.json();

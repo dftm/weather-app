@@ -1,4 +1,5 @@
 import {
+  OpenWeatherError,
   getCoordsForZip,
   getForecast,
   groupForecastByDay,
@@ -25,7 +26,29 @@ export default async function WeatherPage({ params }) {
     );
   }
 
-  const location = await getCoordsForZip(zip);
+  let location;
+  let forecast;
+  try {
+    location = await getCoordsForZip(zip);
+    if (location) {
+      forecast = await getForecast(location.lat, location.lon);
+    }
+  } catch (error) {
+    if (!(error instanceof OpenWeatherError)) throw error;
+    // Next strips error messages from server errors in production, so the
+    // distinct copy is rendered here rather than in error.js.
+    const busy = error.status === 429;
+    return (
+      <main className={styles.main}>
+        <h1>{busy ? "Service busy" : "Forecast unavailable"}</h1>
+        <p>
+          {busy
+            ? "The weather service is receiving too many requests. Please try again in a minute."
+            : "We couldn\u2019t load the forecast right now. Please try again later."}
+        </p>
+      </main>
+    );
+  }
 
   if (!location) {
     return (
@@ -36,7 +59,6 @@ export default async function WeatherPage({ params }) {
     );
   }
 
-  const forecast = await getForecast(location.lat, location.lon);
   const timezoneOffsetSeconds = forecast.city.timezone;
   const days = groupForecastByDay(forecast.list, timezoneOffsetSeconds);
 
