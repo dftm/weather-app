@@ -103,6 +103,12 @@ export function groupForecastByDay(forecastList, timezoneOffsetSeconds) {
   return Array.from(byDate, ([date, entries]) => ({ date, entries }));
 }
 
+// A full day has 8 three-hour slots; the first and last buckets of the
+// forecast window are usually shorter.
+export function isPartialDay(entries) {
+  return entries.length < 8;
+}
+
 export function formatDayHeading(dateKey) {
   return new Date(`${dateKey}T00:00:00Z`).toLocaleDateString("en-US", {
     timeZone: "UTC",

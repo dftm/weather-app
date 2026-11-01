@@ -1,6 +1,14 @@
 import { test, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { OpenWeatherError, getCoordsForZip, getForecast } from "./openweather.js";
+import {
+  OpenWeatherError,
+  getCoordsForZip,
+  getForecast,
+  groupForecastByDay,
+  formatDayHeading,
+  formatSlotTime,
+  isPartialDay,
+} from "./openweather.js";
 
 const realFetch = globalThis.fetch;
 const realKey = process.env.OPENWEATHER_API_KEY;
@@ -90,3 +98,43 @@ for (const name of ["TimeoutError", "AbortError"]) {
     });
   });
 }
+
+// ---- grouping and time formatting (pure helpers, no fetch) ----
+const H = 3600;
+// 2026-01-15T00:00:00Z
+const T0 = Date.UTC(2026, 0, 15) / 1000;
+const slot = (dt) => ({ dt });
+
+test("groupForecastByDay: negative offset moves early-UTC slots to the previous day", () => {
+  // UTC 03:00 on Jan 15 at UTC-8 is Jan 14 19:00
+  const days = groupForecastByDay([slot(T0 + 3 * H), slot(T0 + 9 * H)], -8 * H);
+  assert.deepEqual(days.map((d) => d.date), ["2026-01-14", "2026-01-15"]);
+});
+
+test("groupForecastByDay: positive offset crossing midnight moves late-UTC slots forward", () => {
+  // UTC 22:00 Jan 15 at UTC+5:30 is Jan 16 03:30
+  const days = groupForecastByDay([slot(T0 + 18 * H), slot(T0 + 22 * H)], 19800);
+  assert.deepEqual(days.map((d) => d.date), ["2026-01-15", "2026-01-16"]);
+  assert.equal(days[1].entries.length, 1);
+});
+
+test("groupForecastByDay: 40 slots starting mid-day yield 6 buckets, first and last partial", () => {
+  const list = Array.from({ length: 40 }, (_, i) => slot(T0 + 15 * H + i * 3 * H));
+  const days = groupForecastByDay(list, 0);
+  assert.equal(days.length, 6);
+  assert.equal(days.reduce((n, d) => n + d.entries.length, 0), 40);
+  assert.equal(isPartialDay(days[0].entries), true);
+  assert.equal(isPartialDay(days[1].entries), false);
+  assert.equal(isPartialDay(days[5].entries), true);
+});
+
+test("formatSlotTime: negative and positive offsets", () => {
+  assert.equal(formatSlotTime(T0 + 3 * H, -8 * H), "7:00 PM");
+  assert.equal(formatSlotTime(T0 + 22 * H, 19800), "3:30 AM");
+  assert.equal(formatSlotTime(T0, 0), "12:00 AM");
+});
+
+test("formatDayHeading", () => {
+  assert.equal(formatDayHeading("2026-01-14"), "Wednesday, Jan 14");
+  assert.equal(formatDayHeading("2026-01-16"), "Friday, Jan 16");
+});

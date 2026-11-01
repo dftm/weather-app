@@ -5,6 +5,7 @@ import {
   groupForecastByDay,
   formatDayHeading,
   formatSlotTime,
+  isPartialDay,
 } from "@/lib/openweather";
 import Link from "next/link";
 import styles from "./page.module.css";
@@ -75,12 +76,14 @@ export default async function WeatherPage({ params }) {
     <main className={styles.main}>
       {searchAgain}
       <h1>
-        5-Day Forecast for {location.name} ({zip})
+        Forecast for {location.name} ({zip})
       </h1>
 
       {days.map((day) => (
         <section key={day.date} className={styles.day}>
-          <h2 className={styles.dayHeading}>{formatDayHeading(day.date)}</h2>
+          <h2 className={styles.dayHeading}>{formatDayHeading(day.date)}
+            {isPartialDay(day.entries) && " (partial day)"}
+          </h2>
           <div className={styles.slots}>
             {day.entries.map((entry) => (
               <div key={entry.dt} className={styles.slot}>
