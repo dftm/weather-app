@@ -11,6 +11,12 @@ import styles from "./page.module.css";
 
 const ZIP_PATTERN = /^\d{5}$/;
 
+const searchAgain = (
+  <p>
+    <Link href="/">Search another zip code</Link>
+  </p>
+);
+
 export default async function WeatherPage({ params }) {
   const { zip } = await params;
 
@@ -22,6 +28,7 @@ export default async function WeatherPage({ params }) {
           &ldquo;{zip}&rdquo; isn&apos;t a 5-digit US zip code. Try{" "}
           <Link href="/weather/90210">90210</Link>.
         </p>
+        {searchAgain}
       </main>
     );
   }
@@ -46,6 +53,7 @@ export default async function WeatherPage({ params }) {
             ? "The weather service is receiving too many requests. Please try again in a minute."
             : "We couldn\u2019t load the forecast right now. Please try again later."}
         </p>
+        {searchAgain}
       </main>
     );
   }
@@ -55,6 +63,7 @@ export default async function WeatherPage({ params }) {
       <main className={styles.main}>
         <h1>Zip code not found</h1>
         <p>We couldn&apos;t find a US location for {zip}. Double check the zip and try again.</p>
+        {searchAgain}
       </main>
     );
   }
@@ -64,6 +73,7 @@ export default async function WeatherPage({ params }) {
 
   return (
     <main className={styles.main}>
+      {searchAgain}
       <h1>
         5-Day Forecast for {location.name} ({zip})
       </h1>

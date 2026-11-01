@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
 
@@ -10,6 +10,7 @@ export default function Home() {
   const router = useRouter();
   const [zip, setZip] = useState("");
   const [error, setError] = useState("");
+  const [isPending, startTransition] = useTransition();
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -20,7 +21,9 @@ export default function Home() {
     }
 
     setError("");
-    router.push(`/weather/${zip}`);
+    startTransition(() => {
+      router.push(`/weather/${zip}`);
+    });
   }
 
   return (
@@ -28,7 +31,7 @@ export default function Home() {
       <h1>5-Day Weather Forecast</h1>
       <p>Enter a US zip code to see the forecast in 3-hour increments.</p>
 
-      <form className={styles.form} onSubmit={handleSubmit}>
+      <form className={styles.form} onSubmit={handleSubmit} aria-busy={isPending}>
         <input
           className={styles.input}
           type="text"
@@ -39,8 +42,8 @@ export default function Home() {
           onChange={(event) => setZip(event.target.value)}
           aria-label="US zip code"
         />
-        <button className={styles.button} type="submit">
-          Get forecast
+        <button className={styles.button} type="submit" disabled={isPending}>
+          {isPending ? "Loading..." : "Get forecast"}
         </button>
       </form>
 
