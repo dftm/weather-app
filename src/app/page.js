@@ -37,6 +37,7 @@ export default function Home() {
           className={styles.input}
           type="text"
           inputMode="numeric"
+          autoComplete="postal-code"
           maxLength={5}
           placeholder="90210"
           value={zip}
