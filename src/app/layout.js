@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "5-Day Weather Forecast",
+  title: "Weather Forecast",
   description: "5-day, 3-hour-increment weather forecast for any US zip code.",
 };
 
