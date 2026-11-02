@@ -17,6 +17,12 @@ export const dynamic = "force-dynamic";
 
 const ZIP_PATTERN = /^\d{5}$/;
 
+export async function generateMetadata({ params }) {
+  const { zip } = await params;
+  if (!ZIP_PATTERN.test(zip)) return { title: "Invalid zip code" };
+  return { title: `Forecast for ${zip}` };
+}
+
 const searchAgain = (
   <p>
     <Link href="/">Search another zip code</Link>
@@ -85,24 +91,25 @@ export default async function WeatherPage({ params }) {
           <h2 className={styles.dayHeading}>{formatDayHeading(day.date)}
             {isPartialDay(day.entries) && " (partial day)"}
           </h2>
-          <div className={styles.slots}>
+          <ul className={styles.slots} role="list">
             {day.entries.map((entry) => (
-              <div key={entry.dt} className={styles.slot}>
+              <li key={entry.dt} className={styles.slot}>
                 <span className={styles.time}>
                   {formatSlotTime(entry.dt, timezoneOffsetSeconds)}
                 </span>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={`https://openweathermap.org/img/wn/${entry.weather[0].icon}.png`}
-                  alt={entry.weather[0].description}
+                  src={`https://openweathermap.org/img/wn/${entry.weather[0].icon}@2x.png`}
+                  alt=""
                   width={40}
                   height={40}
+                  loading="lazy"
                 />
                 <span className={styles.temp}>{Math.round(entry.main.temp)}&deg;F</span>
                 <span className={styles.desc}>{entry.weather[0].description}</span>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </section>
       ))}
     </main>
